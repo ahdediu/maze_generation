@@ -1,4 +1,4 @@
-# Maze Generation Using Random Walk Algorithm 
+# Maze Generation by Random Walks
 This document outlines a procedure to generate a maze using the random walk process. It is intended to document the code from generate_maze.py and also as a base for genMaze.tex.
 
 ## Formal Definition of a Maze

@@ -4,7 +4,7 @@ from symtable import Symbol
 from typing import Set, Tuple, List, FrozenSet, Optional
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
-from networkx import is_connected
+from matplotlib import patches
 from pyformlang.finite_automaton import DeterministicFiniteAutomaton, State
 import os
 import networkx as nx
@@ -40,7 +40,9 @@ class Maze:
         The edge you're removing might be part of a different path that's 
         currently the only way to reach another vertex.
         """
-
+        self.vertex_labels = {}  # New member to store vertex labels
+        for vertex in self.vertices:
+            self.vertex_labels[vertex] = '+' if random.choice([True, False]) else '-'
 
 
     def is_connected(self) -> bool:
@@ -189,6 +191,21 @@ class Maze:
                 ax.plot([x1, x2], [y1, y2], color='r', linewidth=2)
             else:
                 ax.plot([x1, x2], [y1, y2], color='k', linewidth=1)
+        radius = 0.35
+        for vertex, label in self.vertex_labels.items():
+            x, y = vertex
+            if label == '+':
+                # ax.text(x, y, label,color="blue", fontsize=12)
+                circ = patches.Circle(vertex, radius/3, edgecolor='blue', facecolor='blue')
+                ax.add_patch(circ)
+            if label == '-':
+                #label = "\u25CF"  # White Circle (which appears as opaque)
+                #ax.text(x, y, "\u3280", ha='center', va='center')
+                circ = patches.Circle(vertex, radius, edgecolor='blue', facecolor='none')
+
+                # Add the circle to the plot
+                ax.add_patch(circ)
+
         # space for lables
         # for (x1, y1), (x2, y2) in maze:
         #     ax.text(x1, y1, str(x1 + y1*3), color="blue", fontsize=9,ha='center', va='center' )

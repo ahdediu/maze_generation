@@ -1,7 +1,9 @@
-import collections
+
 import random
 from symtable import Symbol
 from typing import Set, Tuple, List, FrozenSet, Optional
+
+import jsonpickle
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib import patches
@@ -9,11 +11,14 @@ from pyformlang.finite_automaton import DeterministicFiniteAutomaton, State
 import os
 import networkx as nx
 
+import json
+import datetime
 
 class Maze:
     def __init__(self, m: int, n: int, start: Tuple = (0, 0), end: tuple = None) -> None:
         self.m: int = m
         self.n: int = n
+        self.vertex_labels = {}  # New member to store vertex labels
         self.start: int = start
         self.end: int = end if end is not None else (m - 1, n - 1)
         self.vertices = set()
@@ -31,6 +36,9 @@ class Maze:
         self.remove_extra_edges()
         #peek = iter(self.edges) then next(peek) #
         self.solution_path: Set[FrozenSet[Tuple[int, int]]] =  self.find_path()
+        self.timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        self.filename = f"maze_{m}_by_{n}_ortho_{self.timestamp}."
 
         """
         remove extra edges is tricky
@@ -40,7 +48,34 @@ class Maze:
         The edge you're removing might be part of a different path that's 
         currently the only way to reach another vertex.
         """
-        self.vertex_labels = {}  # New member to store vertex labels
+
+    def __getstate__(self):
+        # Return a dict of attributes you want to pickle.
+        return {
+            'm': self.m,
+            'n': self.n,
+            'vertex_labels': self.vertex_labels,
+            'start': self.start,
+            'end': self.end,
+            'edges': self.edges,
+            'solution_path': self.solution_path,
+        }
+
+    def save(self, dir_name: str="../data") -> None:
+        # Creating a filename using the timestamp
+
+
+        # Joining provided directory path and filename
+        file_path = os.path.join(dir_name, self.filename+"json")
+
+        # Save dict as a json in the provided location
+        with open(file_path, 'w') as f:
+            json_str = jsonpickle.encode(self, indent=4)
+            f.write(json_str)
+        self.draw_maze(dir_name+"//"+self.filename+"png")
+
+
+    def set_random_labels(self):
         for vertex in self.vertices:
             self.vertex_labels[vertex] = '+' if random.choice([True, False]) else '-'
 
@@ -163,7 +198,7 @@ class Maze:
         return
 
 
-    def draw_maze(self) -> None:
+    def draw_maze(self,save:str=None) -> None:
         """
           This method visualizes the maze.
           It uses Matplotlib to draw the maze's paths.
@@ -191,26 +226,31 @@ class Maze:
                 ax.plot([x1, x2], [y1, y2], color='r', linewidth=2)
             else:
                 ax.plot([x1, x2], [y1, y2], color='k', linewidth=1)
-        radius = 0.35
-        for vertex, label in self.vertex_labels.items():
-            x, y = vertex
-            if label == '+':
-                # ax.text(x, y, label,color="blue", fontsize=12)
-                circ = patches.Circle(vertex, radius/3, edgecolor='blue', facecolor='blue')
-                ax.add_patch(circ)
-            if label == '-':
-                #label = "\u25CF"  # White Circle (which appears as opaque)
-                #ax.text(x, y, "\u3280", ha='center', va='center')
-                circ = patches.Circle(vertex, radius, edgecolor='blue', facecolor='none')
+        if self.vertex_labels :
+            radius = 0.3
+            for vertex, label in self.vertex_labels.items():
+                x, y = vertex
+                if label == '+':
+                    # ax.text(x, y, label,color="blue", fontsize=12)
+                    circ = patches.Circle(vertex, radius/3, edgecolor='blue', facecolor='blue')
+                    ax.add_patch(circ)
+                if label == '-':
+                    #label = "\u25CF"  # White Circle (which appears as opaque)
+                    #ax.text(x, y, "\u3280", ha='center', va='center')
+                    circ = patches.Circle(vertex, radius, edgecolor='blue', facecolor='none')
 
-                # Add the circle to the plot
-                ax.add_patch(circ)
+                    # Add the circle to the plot
+                    ax.add_patch(circ)
 
-        # space for lables
-        # for (x1, y1), (x2, y2) in maze:
-        #     ax.text(x1, y1, str(x1 + y1*3), color="blue", fontsize=9,ha='center', va='center' )
-        #     ax.text(x2, y2, str(x2  + y2*3), color="blue", fontsize=9,ha='center', va='center' )
-        plt.show()  # display the plot
+        # space for state numbers
+        # for x in range(self.m):
+        #     for y in range(self.n):
+        #         ax.text(x, y, str(x + y*self.m), color="k", fontsize=5,ha='center', va='center' )
+        if save:
+            plt.savefig(save)
+            plt.close(fig)
+        else:
+            plt.show()  # display the plot
 
 
 def create_GAP_transition_table(maze: Set[Tuple[int, int]], m: int, n: int) -> list:
@@ -286,7 +326,9 @@ def dfa_is_minimal(dfa: DeterministicFiniteAutomaton):
 m: int = 25  # horizontal grid size
 n: int = 20  # vertical grid size
 maze = Maze(m, n)
+maze.set_random_labels()
 maze.draw_maze()
+
 # t=create_GAP_transition_table(maze.edges, m, n)
 # print(t)
 # Initialize the automaton (replace this with your current automaton)
@@ -301,4 +343,4 @@ print(f'The automaton is {"minimal" if is_minimal else "not minimal"}')
 # with open('path/to/your/minimality_result.txt', 'w') as file:
 #    file.write(f'The automaton is {"minimal" if is_minimal else "not minimal"}.\n')
 
-# print(f'Minimality result saved to text file.')
+maze.save()

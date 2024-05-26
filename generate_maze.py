@@ -1,13 +1,12 @@
 
 import random
-from symtable import Symbol
+
 from typing import Set, Tuple, List, FrozenSet, Optional
 
-import jsonpickle
+
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib import patches
-from pyformlang.finite_automaton import DeterministicFiniteAutomaton, State
 import os
 import networkx as nx
 
@@ -35,7 +34,8 @@ class Maze:
 
         self.remove_extra_edges()
         #peek = iter(self.edges) then next(peek) #
-        self.solution_path: Set[FrozenSet[Tuple[int, int]]] =  self.find_path()
+        self.solution_vertex_path:List[Tuple[int, int]]=self.find_solution()
+        self.solution_path: Set[FrozenSet[Tuple[int, int]]] =  self.convert_path_to_edges(self.solution_vertex_path)
         self.timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
         self.filename = f"maze_{m}_by_{n}_ortho_{self.timestamp}."
@@ -52,26 +52,31 @@ class Maze:
     def __getstate__(self):
         # Return a dict of attributes you want to pickle.
         return {
-            'm': self.m,
-            'n': self.n,
-            'vertex_labels': self.vertex_labels,
+            'width': self.m,
+            'height': self.n,
             'start': self.start,
             'end': self.end,
-            'edges': self.edges,
-            'solution_path': self.solution_path,
+            'edges': [[vertex for vertex in edge] for edge in self.edges],
+            'solution_path': self.solution_vertex_path,
+            'labels': ''.join([self.vertex_labels[(i, j)] for i in range(self.m) for j in range(self.n)]),
+            'labels_comment': 'all labels for vertices [0,0], [0,1], ... [m-1,n-1]',
+
         }
 
     def save(self, dir_name: str="../data") -> None:
         # Creating a filename using the timestamp
 
-
+        data = self.__getstate__()
+        json_str = json.dumps(data)
+        formatted_json_str = json_str.replace(', "', ',\n "')
         # Joining provided directory path and filename
         file_path = os.path.join(dir_name, self.filename+"json")
 
         # Save dict as a json in the provided location
         with open(file_path, 'w') as f:
-            json_str = jsonpickle.encode(self, indent=4)
-            f.write(json_str)
+            # json_str = jsonpickle.encode(self, indent=4)
+            # f.write(json_str)
+            f.write(formatted_json_str)
         self.draw_maze(dir_name+"//"+self.filename+"png")
 
 
@@ -96,54 +101,20 @@ class Maze:
                     else:
                         break
 
-    # function to find a path, say depth-first search
-# from top left to bottom right of the maze
-
-# get the path
-#     def find_path(self, end_path: Optional[Tuple[int, int]] = None) -> Optional[Set[FrozenSet[Tuple[int, int]]]]:
-#         """
-#         Perform a breadth-first search to find a path from start to end.
-#
-#         :param end_path: The end point for the path calculation.
-#         :return: Set of frozensets. Each frozenset represents an edge,
-#                  expressed as a pair of vertices (where each vertex is a tuple of coordinates).
-#                  None if no such path exists.
-#         """
-#         if end_path is None:
-#             end_path = self.end
-#
-#         visited = set()  # A set to store visited vertices.
-#         queue = collections.deque([[self.start]])  # Initialize the queue with the start point.
-#
-#         while queue:  # Continue until all paths are exhausted.
-#             path = queue.popleft()  # Pop the next path from the queue.
-#             vertex = path[-1]  # Get the last vertex from the path.
-#
-#             if vertex in visited:  # If the vertex has been visited, skip to next iteration
-#                 continue
-#
-#             visited.add(vertex)  # Mark the current vertex as visited
-#
-#             for adjacent in self.adjacent_vertices(vertex):  # iterate over adjacent vertices
-#                 new_path = list(path)  # Create a new path from the old one
-#                 new_path.append(adjacent)  # Add the adjacent vertex to the new path
-#
-#                 if adjacent == end_path:  # Found a path
-#                     return {frozenset({new_path[i - 1], new_path[i]}) for i in range(1, len(new_path))}
-#
-#                 queue.append(new_path)  # Add the new path to the queue
-#
-#         return None  # No path was found
-    def find_path(self) -> Set[FrozenSet[tuple]]:
+    def find_solution(self)-> List[Tuple[int, int]]:
+        path:List[Tuple[int, int]] = []  # Initialize path as an empty list
         try:
             # Use NetworkX's shortest path function
             path = nx.shortest_path(self.graph, self.start, self.end)
+        except nx.NetworkXNoPath:
+            print("No path between start and end.")
+        return path
+
+    def convert_path_to_edges(self,path: List[Tuple[int, int]]) -> Set[FrozenSet[tuple]]:
             # Convert the returned node path into edge path, and use frozenset for edges
             edge_path = {frozenset([path[i - 1], path[i]]) for i in range(1, len(path))}
             return edge_path
-        except nx.NetworkXNoPath:
-            print("No path between start and end.")
-            return set()
+
 
     def add(self, vertices: List[Tuple[int, int]], edges: Set[FrozenSet[Tuple[int, int]]]) -> None:
         self.vertices.update(vertices)
@@ -253,74 +224,6 @@ class Maze:
             plt.show()  # display the plot
 
 
-def create_GAP_transition_table(maze: Set[Tuple[int, int]], m: int, n: int) -> list:
-    transition_table = [[i for i in range(m * n)] for _ in range(4)]  # Default transition is self
-
-    for edge in maze:
-        u, v = edge
-        ux, uy = u  # unpack the tuple coordinates
-        vx, vy = v
-
-        # Calculate state numbers
-        state_u = ux + uy * m
-        state_v = vx + vy * m
-
-        if ux == vx:  # the edge is vertical    uy
-            if uy > vy:  # the edge goes N-S    vy
-                transition_table[2][state_u] = state_v  # u transitions to v on 's'
-                transition_table[0][state_v] = state_u  # v transitions to u on 'n'
-            else:  # the edge goes S-N
-                transition_table[0][state_u] = state_v  # u transitions to v on 'n'
-                transition_table[2][state_v] = state_u  # v transitions to u on 's'
-        else:  # the edge is horizontal
-            if ux > vx:  # the edge goes vx ux
-                transition_table[3][state_u] = state_v  # u transitions to v on 'w'
-                transition_table[1][state_v] = state_u  # v transitions to u on 'e'
-            else:  # the edge goes ux vx
-                transition_table[1][state_u] = state_v  # u transitions to v on 'e'
-                transition_table[3][state_v] = state_u  # v transitions to u on 'w'
-
-    return transition_table
-
-
-def create_dfa(maze: Maze) -> DeterministicFiniteAutomaton:
-    transition_table: list = create_GAP_transition_table(maze.edges, maze.m, maze.n)
-    dfa = DeterministicFiniteAutomaton()
-
-    direction_to_symbol = {
-        0: Symbol('n'),
-        1: Symbol('e'),
-        2: Symbol('s'),
-        3: Symbol('w')
-    }
-
-    num_states = len(transition_table[0])
-
-    for direction in range(4):  # For each direction
-        for state in range(num_states):  # For each state
-
-            # Get mapped Symbol
-            symbol = direction_to_symbol[direction]
-
-            # Get next state from transition table
-            next_state = transition_table[direction][state]
-
-            # Define state and next_state
-            s = State(str(state))
-            s_next = State(str(next_state))
-
-            # Add the transition to the DFA
-            dfa.add_transition(s, symbol, s_next)
-
-    dfa.add_start_state(State(maze.start))
-    dfa.add_final_state(State(maze.end))
-    return dfa
-
-
-def dfa_is_minimal(dfa: DeterministicFiniteAutomaton):
-    from pyformlang import finite_automaton as fa
-    minimal_dfa = dfa.minimize()
-    return dfa == minimal_dfa
 
 
 m: int = 25  # horizontal grid size
@@ -328,19 +231,5 @@ n: int = 20  # vertical grid size
 maze = Maze(m, n)
 maze.set_random_labels()
 maze.draw_maze()
-
-# t=create_GAP_transition_table(maze.edges, m, n)
-# print(t)
-# Initialize the automaton (replace this with your current automaton)
-dfa = DeterministicFiniteAutomaton()
-# ... (define your dfa here)
-# dfa.tr
-# Check for minimality
-is_minimal = dfa_is_minimal(dfa)
-print(f'The automaton is {"minimal" if is_minimal else "not minimal"}')
-# Save the result to a text file
-# Be sure to use the path where you want to save the results
-# with open('path/to/your/minimality_result.txt', 'w') as file:
-#    file.write(f'The automaton is {"minimal" if is_minimal else "not minimal"}.\n')
 
 maze.save()

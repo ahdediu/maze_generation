@@ -58,7 +58,7 @@ class Maze:
             'end': self.end,
             'edges': [[vertex for vertex in edge] for edge in self.edges],
             'solution_path': self.solution_vertex_path,
-            'labels': ''.join([self.vertex_labels[(i, j)] for i in range(self.m) for j in range(self.n)]),
+            'labels': ''.join([self.vertex_labels[(i, j)]  for j in range(self.n) for i in range(self.m)]),
             'labels_comment': 'all labels for vertices [0,0], [0,1], ... [m-1,n-1]',
 
         }
@@ -199,19 +199,19 @@ class Maze:
                 ax.plot([x1, x2], [y1, y2], color='k', linewidth=1)
         if self.vertex_labels :
             radius = 0.3
-            for vertex, label in self.vertex_labels.items():
-                x, y = vertex
-                if label == '+':
-                    # ax.text(x, y, label,color="blue", fontsize=12)
-                    circ = patches.Circle(vertex, radius/3, edgecolor='blue', facecolor='blue')
-                    ax.add_patch(circ)
-                if label == '-':
-                    #label = "\u25CF"  # White Circle (which appears as opaque)
-                    #ax.text(x, y, "\u3280", ha='center', va='center')
-                    circ = patches.Circle(vertex, radius, edgecolor='blue', facecolor='none')
+            for y in range(self.n):
+                for x in range(self.m):
+                    if self.vertex_labels[(x,y)] == '+':
+                        # ax.text(x, y, label,color="blue", fontsize=12)
+                        circ = patches.Circle((x,y), radius/3, edgecolor='blue', facecolor='blue')
+                        ax.add_patch(circ)
+                    if self.vertex_labels[(x,y)] == '-':
+                        #label = "\u25CF"  # White Circle (which appears as opaque)
+                        #ax.text(x, y, "\u3280", ha='center', va='center')
+                        circ = patches.Circle((x,y), radius, edgecolor='blue', facecolor='none')
 
-                    # Add the circle to the plot
-                    ax.add_patch(circ)
+                        # Add the circle to the plot
+                        ax.add_patch(circ)
 
         # space for state numbers
         # for x in range(self.m):
@@ -230,6 +230,7 @@ m: int = 25  # horizontal grid size
 n: int = 20  # vertical grid size
 maze = Maze(m, n)
 maze.set_random_labels()
+maze.save()
 maze.draw_maze()
 
-maze.save()
+

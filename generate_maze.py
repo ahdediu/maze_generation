@@ -58,8 +58,9 @@ class Maze:
             'end': self.end,
             'edges': [[vertex for vertex in edge] for edge in self.edges],
             'solution_path': self.solution_vertex_path,
-            'labels': ''.join([self.vertex_labels[(i, j)]  for j in range(self.n) for i in range(self.m)]),
-            'labels_comment': 'all labels for vertices [0,0], [0,1], ... [m-1,n-1]',
+            'labels': [''.join([self.vertex_labels[(i, j)][k] for j in range(self.n) for i in range(self.m)]) for k in
+                       range(len(self.vertex_labels[(1, 1)]))],
+            'labels_comment': str(len(self.vertex_labels[(1, 1)]))+' different labelings, one labeling contains all labels for vertices [0,0], [0,1], ... [m-1,n-1]',
 
         }
 
@@ -80,9 +81,13 @@ class Maze:
         self.draw_maze(dir_name+"//"+self.filename+"png")
 
 
-    def set_random_labels(self):
+    def set_random_labels(self, num_labels: int=1):
+        # each vertex store a string of possible labelings
+        # the length of each string is num_labels
         for vertex in self.vertices:
-            self.vertex_labels[vertex] = '+' if random.choice([True, False]) else '-'
+            self.vertex_labels[vertex] =''
+            for i in range(num_labels):
+                self.vertex_labels[vertex] += '+' if random.choice([True, False]) else '-'
 
 
     def is_connected(self) -> bool:
@@ -201,11 +206,11 @@ class Maze:
             radius = 0.3
             for y in range(self.n):
                 for x in range(self.m):
-                    if self.vertex_labels[(x,y)] == '+':
+                    if self.vertex_labels[(x,y)][0] == '+':
                         # ax.text(x, y, label,color="blue", fontsize=12)
                         circ = patches.Circle((x,y), radius/3, edgecolor='blue', facecolor='blue')
                         ax.add_patch(circ)
-                    if self.vertex_labels[(x,y)] == '-':
+                    if self.vertex_labels[(x,y)][0] == '-':
                         #label = "\u25CF"  # White Circle (which appears as opaque)
                         #ax.text(x, y, "\u3280", ha='center', va='center')
                         circ = patches.Circle((x,y), radius, edgecolor='blue', facecolor='none')
@@ -229,7 +234,7 @@ class Maze:
 m: int = 25  # horizontal grid size
 n: int = 20  # vertical grid size
 maze = Maze(m, n)
-maze.set_random_labels()
+maze.set_random_labels(10)
 maze.save()
 maze.draw_maze()
 

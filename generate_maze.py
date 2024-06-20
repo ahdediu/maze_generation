@@ -65,12 +65,12 @@ class Maze:
         }
 
     def save(self, dir_name: str="../data") -> None:
-        # Creating a filename using the timestamp
+        # Creating a default_filename using the timestamp
 
         data = self.__getstate__()
         json_str = json.dumps(data)
         formatted_json_str = json_str.replace(', "', ',\n "')
-        # Joining provided directory path and filename
+        # Joining provided directory path and default_filename
         file_path = os.path.join(dir_name, self.filename+"json")
 
         # Save dict as a json in the provided location

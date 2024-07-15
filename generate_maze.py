@@ -36,7 +36,7 @@ class Maze:
         #peek = iter(self.edges) then next(peek) #
         self.solution_vertex_path:List[Tuple[int, int]]=self.find_solution()
         self.solution_path: Set[FrozenSet[Tuple[int, int]]] =  self.convert_path_to_edges(self.solution_vertex_path)
-        self.timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.timestamp = datetime.datetime.now().strftime("%Y%n%d_%H%M%S")
 
         self.filename = f"maze_{m}_by_{n}_ortho_{self.timestamp}."
 
@@ -60,7 +60,7 @@ class Maze:
             'solution_path': self.solution_vertex_path,
             'labels': [''.join([self.vertex_labels[(i, j)][k] for j in range(self.n) for i in range(self.m)]) for k in
                        range(len(self.vertex_labels[(1, 1)]))],
-            'labels_comment': str(len(self.vertex_labels[(1, 1)]))+' different labelings, one labeling contains all labels for vertices [0,0], [0,1], ... [m-1,n-1]',
+            'labels_comment': str(len(self.vertex_labels[(1, 1)]))+' different labelings, one labeling contains all labels for vertices [0,0], [0,1], ... [n-1,n-1]',
 
         }
 
@@ -219,9 +219,9 @@ class Maze:
                         ax.add_patch(circ)
 
         # space for state numbers
-        # for x in range(self.m):
+        # for x in range(self.n):
         #     for y in range(self.n):
-        #         ax.text(x, y, str(x + y*self.m), color="k", fontsize=5,ha='center', va='center' )
+        #         ax.text(x, y, str(x + y*self.n), color="k", fontsize=5,ha='center', va='center' )
         if save:
             plt.savefig(save)
             plt.close(fig)
